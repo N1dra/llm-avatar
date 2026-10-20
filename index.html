@@ -256,6 +256,10 @@
           </span>
         </label>
       </div>
+      <!-- PC 원본 쓰기. 켜면 앱 파일을 PC 창구에서 먼저 받아 PC 에서 고치는 판으로 뜬다 (app.js PC 원본 쓰기, sw.js PC원본).
+           창구 열쇠가 잠겨 담겼을 때만 선다. -->
+      <label class="switch" id="pcSrcRow" hidden>PC 원본 쓰기 <input type="checkbox" id="pcSrc"></label>
+      <p class="note" id="pcSrcNote" hidden></p>
       <button id="keyForget" type="button" class="item center">초기화</button>
       <label class="field">성격
         <textarea id="brainPersona" rows="5"></textarea>
