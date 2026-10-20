@@ -1,0 +1,16 @@
+폰 안 받아쓰기(홈 화면 앱)가 쓰는 남의 파일이다. PC 받아쓰기(door/door.js)도 같은 모델 파일을 읽는다.
+손대지 않고 그대로 둔다 -- 서비스 워커가 이 폴더를 한 번 받아 두고 다시 안 받으므로(캐시 먼저), 고치면 이미 받은 폰에는
+안 닿는다. 바꿀 때는 폴더 이름을 바꾸고 그 이름과 캐시 이름을 sw.js(KIT_CACHE) / app.js(키트캐시, 키트) / stt/worker.js
+에서 함께 바꾼다. 캐시 이름이 바뀌면 서비스 워커가 옛 캐시를 지워 폰에 두 벌이 안 남는다.
+앞 판은 stt/kit-ko(moonshine-base-ko + whisper-base, transformers.js)였다 -- 사람이 아이폰에서 직접 말해 보고 둘 다
+폐기했다 (⑵History [대화] 턴 사이 딜레이 줄이기 [6] ~ [8]).
+
+  sherpa-onnx-asr.js / sherpa-onnx-wasm-main-vad-asr.js / sherpa-onnx-wasm-main-vad-asr.wasm
+    github.com/k2-fsa/sherpa-onnx 릴리스 v1.13.2 의
+    sherpa-onnx-wasm-simd-1.13.2-vad-asr-zh_en_ja_ko_cantonese-sense_voice_small.tar.bz2 에서. Apache-2.0.
+    실행 파일(.js)은 한 곳만 고쳤다 : 묶음(.data, SenseVoice 240 MB)을 받는 loadPackage({files:[…]}) 부름을
+    'void 0' 으로 비웠다. 모델은 stt/worker.js 가 따로 받아 넣는다. 그래서 .data 파일은 이 폴더에 없다.
+    SharedArrayBuffer 를 쓰는 실 판이라 페이지가 격리돼야 돈다 (tools/serve.js 의 COOP / COEP 머리).
+  model.int8.onnx / tokens.txt
+    같은 릴리스 묶음 asr-models 의 sherpa-onnx-dolphin-small-ctc-multi-lang-int8-2025-04-02 에서 (250 MB).
+    모델은 DataoceanAI 의 Dolphin small (372M, 동아시아 40 개 말), CTC 가지만 쓴다. Apache-2.0.

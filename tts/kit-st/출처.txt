@@ -1,0 +1,10 @@
+목소리 모델 꾸러미 (Supertonic 3 int8 원본 파일)
+========================================
+
+  가져온 곳 : sherpa-onnx 모델 sherpa-onnx-supertonic-3-tts-int8-2026-05-11
+    (https://github.com/k2-fsa/sherpa-onnx/releases/tag/tts-models)
+  넣은 파일 : duration_predictor / text_encoder / vector_estimator / vocoder (.int8.onnx), tts.json, unicode_indexer.bin
+    그대로. voice.bin 은 tts/kit-supertonic 의 것 (기본 10 + 섞음 5, 차례 F1 ~ F5, M1 ~ M5, 섞음 1 ~ 5).
+
+  왜 따로 두나 : 앞 판(tts/kit-supertonic)은 목소리 전용 WASM 묶음이라 모델이 .data 한 덩이에 묶여 그 WASM 만 읽었다.
+  한 엔진(engine/kit-one)은 모델을 파일 칸에 직접 넣어야 해서 원본 파일로 둔다. 크기는 합쳐 145 MB 남짓으로 같다.

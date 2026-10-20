@@ -1,0 +1,24 @@
+한 엔진 꾸러미 (받아쓰기 + 목소리를 한 WASM 에)
+========================================
+
+  가져온 곳 : npm 패키지 sherpa-onnx 1.13.8 (https://registry.npmjs.org/sherpa-onnx/-/sherpa-onnx-1.13.8.tgz)
+  넣은 파일 :
+    sherpa-onnx-wasm-nodejs.wasm : 그대로 (15 MB)
+    sherpa-onnx-asr.js : 그대로
+    sherpa-onnx-tts.js : 그대로
+    sherpa-onnx-wasm-web.js : 패키지의 sherpa-onnx-wasm-nodejs.js 를 고친 사본
+
+  왜 이 판인가 : 따로 받은 받아쓰기 WASM 과 목소리 WASM 을 일꾼 둘에 띄우면 PC 크롬에서 일꾼마다 540 MB 남짓, 합쳐 1080 MB
+  남짓이 들어 아이폰 페이지 한도를 넘었다. 이 판은 한 WASM 에 Dolphin(받아쓰기)과 Supertonic(목소리)이 다 들어, 한 일꾼 한
+  메모리에 둘을 올리면 둘 다 선 뒤 516 MB, 한 번씩 돌린 뒤 619 MB 였다 (PC 크롬). 실(스레드)을 안 써 격리 머리 없이도 돈다.
+
+  고친 곳 (sherpa-onnx-wasm-web.js) : 노드 전용 파일 길(NODERAWFS)로 빌드돼 브라우저에서는 '노드에서만 된다' 를 던진다.
+  아래 두 줄만 걷었다 -- 그러면 빌드 안에 함께 든 MEMFS 가 파일 칸으로 쓰인다.
+    if(!ENVIRONMENT_IS_NODE){throw new Error("NODERAWFS is currently only supported on Node.js environment.")}
+    for(var _key in NODERAWFS){FS[_key]=_wrapNodeError(NODERAWFS[_key])}
+  고치는 손 : %TEMP%\sv_bench\scripts\patch_glue.js (두 줄이 한 번씩만 있을 때만 고친다). 판을 올리면 다시 돌린다.
+  붙임 파일이 require 로 부르는 path 는 engine/worker.js 가 작은 대역으로 채운다 (fs / crypto 는 노드 갈래에서만 쓰여 비운다).
+
+  wasm 이 처음부터 512 MB 를 잡는다 (빌드 값). 모델은 그 안에 든다.
+
+  모델은 여기 없다 -- 받아쓰기 모델은 stt/kit-dolphin (model.int8.onnx, tokens.txt), 목소리 모델은 tts/kit-st 에 있다.

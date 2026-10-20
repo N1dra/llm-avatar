@@ -1,0 +1,320 @@
+/* 무대는 화면을 통째로 쓴다. 높이를 vh / dvh 로 안 잡고 position:fixed 로
+   네 변에 붙인다 -- 아이폰은 주소창이 접히고 펴질 때 vh 가 실제 화면과 어긋난다. */
+/* 색은 보라 기운이 없는 회색 계열이다. 강조색은 톱니와 흐린 글(--muted #8e8e93)보다 한 단 진한
+   회색이다 (사람이 정했다 -- 톱니보다 진하게). 그 위 글자는 흰색이다. */
+:root {
+  --bg: #1c1c1e;
+  --panel: #2a2a2c;
+  --text: #f2f2f4;
+  --muted: #8e8e93;
+  --accent: #636366;
+  --live: #D1D1D6;
+  --track: rgba(255, 255, 255, .16);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+/* 글자 고르기와 돋보기 / 길게 누름 메뉴 / 끌기를 막는다. 아바타 손짓과 겹쳐 손을 빼앗는다
+   (app.js 돋보기와 끌기 막기가 사건으로 한 겹 더 막는다). 글을 치는 칸만 되살린다. */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-user-drag: none; }
+input, textarea { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+/* touch-action: manipulation -- 두 번 두드려 확대와 두 손가락 확대를 브라우저가 안 하게 한다 (굴림만
+   남긴다). 아이폰 사파리는 확대를 이것만으로 다 안 막아 app.js 브라우저 확대 막기가 한 겹 더 막는다.
+   아바타 칸은 아래에서 none 으로 덮어 손짓을 통째로 앱이 받는다. */
+html { touch-action: manipulation; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+  overscroll-behavior: none; }
+button { font: inherit; color: inherit; border: 0; border-radius: 12px; cursor: pointer; }
+
+/* 밀기. 꼴은 노트앱 Range slider 와 같다 (NoteApp apps/styles.css) -- 6px 홈에 20px 손잡이, 손잡이는
+   판 색 2px 테두리와 옅은 그림자로 홈에서 떠 보인다. 색만 이 앱의 회색 계열로 둔다. 바깥 여백은
+   노트앱처럼 안 둔다 -- 간격은 밀기 칸 쪽(.field.slider)이 노트앱 값으로 잡는다. */
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px;
+  border-radius: 3px; background: var(--track); outline: none; margin: 0; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px;
+  border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--panel);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .2); }
+input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--accent);
+  cursor: pointer; border: 2px solid var(--panel); box-shadow: 0 1px 3px rgba(0, 0, 0, .2); }
+input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--track); }
+
+/* 무대 바탕은 번짐 없는 단색이다 -- 앞 판은 위 30% 가운데를 밝게(#38383a) 번지게 칠해 아바타 뒤 조명처럼 두었는데,
+   화면 위쪽이 뿌옇게 흐려 보여 사람이 걷었다. */
+.stage { position: fixed; inset: 0; overflow: hidden; background: var(--bg); }
+/* touch-action:none -- 끌기와 두 손가락 벌리기를 앱이 받는다. 안 막으면 아이폰이
+   그 손짓을 화면 굴림과 확대로 먼저 가져간다. */
+.avatarHost { position: absolute; inset: 0; touch-action: none; }
+/* 처음 뜰 때 무대 위 단추와 줄(톱니 / 회전 방식 / 말 넣는 줄 / 빈 무대 안내 / 알림)은 앱 코드가 다
+   정할 때까지 숨겼다가 한 프레임에 함께 세운다 (index.html body.booting, app.js 다뜨기). 숨김은 자리를
+   두는 visibility 로 한다 -- display 로 걷으면 설 때 칸 크기가 다시 셈해져 한 번 더 들썩인다.
+   그리는 칸과 카메라 화면은 무대의 바탕이라 안 숨긴다. */
+body.booting .stage > :not(.avatarHost):not(.camView) { visibility: hidden; }
+.avatarHost canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+
+/* 우측 위 아이콘 단추 (톱니). PC 판과 같은 결로 테두리도 바탕도 없이 옅은 색 한 벌이다.
+   손가락 자리는 46px 로 두고 그림은 그 안에 앉힌다. 크기는 PC 판 그대로 34px. */
+.topIcon { position: absolute; right: 12px;
+  width: 46px; height: 46px; display: grid; place-items: center; padding: 0;
+  background: none; color: var(--muted); transition: transform .16s ease; }
+.gear { top: calc(var(--safe-top) + 10px); }
+.gear svg { width: 34px; height: 34px; }
+.topIcon:active { transform: scale(.96); }
+/* 회전 방식 단추. 톱니(위 10 + 46) 바로 아래에 같은 46px 칸으로 선다. 그림은 톱니(34px)보다 한 단
+   작게 30px -- 톱니는 테두리까지 차는 그림이라 같은 크기면 이쪽이 더 커 보인다. 지금 방식의 그림만 보인다. */
+.rotMode { top: calc(var(--safe-top) + 58px); }
+.rotMode svg { width: 30px; height: 30px; }
+/* 면 그림은 면 회전일 때만 선다. 밑값을 "숨김" 으로 두는 까닭 : 앱 코드가 방식을 걸기 전(처음 그려지는
+   순간 / 코드가 늦거나 못 돈 판)에도 처음 방식인 축 회전 그림 하나만 보이게. */
+.rotMode .plane, .rotMode[data-mode="plane"] .axis { display: none; }
+.rotMode[data-mode="plane"] .plane { display: block; }
+
+/* 말 넣는 칸 상자. 칠과 둥글기는 상자가 들고 칸은 칠 없이 그 안에 선다 -- 칸이 칠을 들면 단추
+   셋이 칸 밖에 덧댄 것처럼 보인다. 단추 셋은 칸 안 왼쪽에 마이크 / 카메라 / 사진 차례로 선다.
+   칸에 글을 치려고 손을 주면(.typing, app.js 칸 안 단추) 단추가 빠지고 칸이 상자 끝까지 늘어난다.
+   손가락 자리 36px 는 칸 높이(44px) 안에 드는 가장 큰 칸이고 그림 22px 는 칸 글씨(16px)보다 한
+   눈금 크게 둔 값이다. 켠 동안 / 듣는 동안만 강조색. */
+.inputBox { flex: 1; min-width: 0; display: flex; align-items: center; border-radius: 12px;
+  background: rgba(42, 42, 44, .86); }
+.fieldTools { display: flex; flex: none; gap: 0; padding-left: 4px; }
+.inputBox.typing .fieldTools { display: none; }
+.chatBar .sideIcon { width: 36px; height: 36px; display: grid; place-items: center; padding: 0;
+  background: none; color: var(--muted); transition: transform .16s ease; }
+.chatBar .sideIcon[hidden] { display: none; }
+.sideIcon svg { width: 22px; height: 22px; }
+/* 켠 단추(마이크 듣는 동안 / 카메라 켠 동안 / 사진 붙인 동안)는 꺼진 단추의 회색(--muted #8E8E93)을
+   밝힌 회색으로 선다 -- iOS 밝은 회색(systemGray4 #D1D1D6). 파랑 계열은 앱의 회색 결에서 튄다고
+   사람이 정했다. 판의 고름 표시(어두운 회색 --accent)와 따로 둔다 -- 그쪽은 고른 것이고 이쪽은
+   지금 돌고 있는 것이다. */
+.sideIcon.on { color: var(--live); }
+/* 대답 중에도 듣기(마이크 길게 누르기)가 켜진 동안 마이크는 초록이다 -- iOS 초록(systemGreen #34C759). 듣는 동안은 짙게, 쉬는 동안은
+   옅게 서서 켠 / 쉼은 그대로 갈린다. 길게 누를 때 고르기 / 돋보기가 안 뜨게 한다. */
+#chatMic { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.chatBar #chatMic.duplex { color: rgba(52, 199, 89, .55); }
+.chatBar #chatMic.duplex.on, .chatBar #chatMic.duplex:active { color: #34C759; }
+.sideIcon:active { transform: scale(.96); }
+/* 누르는 동안 불이 들어온다 (사람이 짚었다 -- 터치해도 불이 안 들어온다). 단추 셋은 켠 색(밝은 회색), 보내기는
+   칠이 꺼진 단추 색만큼 밝아진다. 아이폰은 문서에 touchstart 듣기가 있어야 :active 를 건다 (app.js 누름
+   불). */
+.chatBar .sideIcon:active { color: var(--live); }
+.chatBar .sendBtn:active { background: var(--muted); }
+
+.emptyStage { position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px; padding: 24px; text-align: center; color: var(--muted); }
+.emptyStage[hidden] { display: none; }
+/* 안내 글의 기본 위아래 여백을 걷는다 -- 남기면 가운데 맞춤이 그 여백까지 셈해, 보이는 두 항목(안내 글 + VRM 넣기)의
+   합 높이 가운데가 화면 가운데보다 8px 아래에 섰다 (사람이 '두 항목의 합 높이 가운데를 폰 높이 가운데와 맞춰' 라고 했다).
+   무대가 화면 전체(inset 0)라 무대 가운데가 곧 폰 높이 가운데다. */
+.emptyStage p { margin: 0; }
+
+.notice { position: absolute; left: 50%; transform: translateX(-50%);
+  top: calc(var(--safe-top) + 64px); max-width: 88%; padding: 10px 14px; border-radius: 12px;
+  background: rgba(20, 20, 22, .86); font-size: 14px; line-height: 1.45; text-align: center; }
+.notice[hidden] { display: none; }
+
+/* 바닥 둘은 아래에서부터 말 넣는 줄 → 대화 줄 차례로 쌓는다.
+   자판이 오르면 앱이 --kb 에 그린 높이를 곡선으로 적어 둘을 함께 올린다 (app.js 자판 따라 오르기).
+   자판이 없을 때는 홈 막대(안전영역) 위 10, 자판이 오르면 자판 맨 위(✓ 줄)에 바로 붙어 선다 (사람이
+   정했다 -- 자판 위에 홈 막대 몫이 남아 떠 보였고, 8 과 4 도 넓었다). 둘 중 높은 쪽을 따라 곡선 도중에도
+   끊기지 않는다.
+   말 넣는 칸 글씨를 16px 로 두는 것은 그보다 작으면 아이폰이 칸에 손을 줄 때 화면을
+   키우기 때문이다. */
+.chatBar { position: absolute; left: 0; right: 0;
+  bottom: max(calc(var(--safe-bottom) + 10px), var(--kb, 0px));
+  display: flex; gap: 8px; padding: 0 12px; align-items: center; }
+.chatBar input { flex: 1; min-width: 0; padding: 11px 14px; border: 0; border-radius: 12px;
+  background: none; color: var(--text); font: inherit; font-size: 16px; outline: none; }
+.chatBar button { padding: 11px 16px; }
+.chatBar button:disabled { opacity: .5; }
+/* 보내기 단추 (노트앱 .ai-send 와 같은 꼴) -- 44px 동그라미에 흰 종이비행기. 그림이 27.5px 인 까닭은
+   종이비행기가 제 그림판 안에서 0.8 배로 들어 있어 22px 로 보이게 키운 것이다 (노트앱과 같은 셈).
+   칠은 이 앱 강조색이다. */
+.chatBar .sendBtn { flex: none; width: 44px; height: 44px; padding: 0; border-radius: 50%;
+  background: var(--accent); display: grid; place-items: center; }
+.chatBar .sendBtn svg { width: 27.5px; height: 27.5px; fill: #fff; }
+.chatBar .sendBtn:disabled { opacity: .35; }
+/* 붙인 사진 미리보기. 말 넣는 칸 왼쪽에 작게 선다. */
+.chatBar .attach { flex: none; width: 40px; height: 40px; padding: 0; border-radius: 8px; overflow: hidden; background: none; }
+.chatBar .attach[hidden] { display: none; }
+.chatBar .attach img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* 실시간 카메라 화면. 무대를 꽉 채워 깔고 그 위에 아바타가 선다. */
+/* 카메라 영상은 안 보인다 -- 켜 둔 동안 말할 때의 장면만 찍어 보낸다 (사람이 정했다). 제자리 제 크기로 두고 투명하게만 한다 --
+   숨기면(display none) 그리기를 멈춰 찍을 장면(videoWidth)이 안 선다. */
+.camView { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; pointer-events: none; }
+.camView[hidden] { display: none; }
+
+/* 대화 줄. 말 넣는 줄 바로 위에 말풍선을 아래부터 쌓는다. 높이는 화면 세로의 3 할까지라
+   위로는 아바타 얼굴을 안 덮고, 넘치면 그 안에서 굴린다. 위쪽 끝은 옅게 흐려 아바타
+   위에 선을 긋지 않는다. */
+/* 바닥은 말 넣는 줄 바닥에서 56 위다 (줄 높이 44 + 사이 12) -- 줄과 같은 셈으로 따라 오른다. */
+.chatLog { position: absolute; left: 0; right: 0;
+  bottom: max(calc(var(--safe-bottom) + 66px), calc(var(--kb, 0px) + 56px));
+  max-height: 30%; overflow-y: auto; scrollbar-width: none; padding: 16px 12px 0;
+  display: flex; flex-direction: column; gap: 6px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 16px); }
+.chatLog::-webkit-scrollbar { display: none; }
+.bubble { max-width: 80%; padding: 8px 12px; border-radius: 14px; font-size: 15px; line-height: 1.45;
+  background: rgba(42, 42, 44, .82); word-break: keep-all; overflow-wrap: anywhere; }
+.bubble:empty { display: none; }
+.bubble.me { align-self: flex-end; background: rgba(99, 99, 102, .86); color: #fff; }
+.bubble.ai { align-self: flex-start; }
+
+.primary { padding: 12px 22px; background: var(--accent); color: #fff; font-weight: 600; }
+.primary.wide { width: 100%; margin-top: 12px; }
+/* 판 머리의 닫기. 노트앱 닫기와 같은 X 그림(Material close)을 44px 손가락 자리에 24px 로 앉힌다.
+   오른쪽 -10px 는 손가락 자리가 그림보다 넓은 몫이라, 그림 오른끝이 판 안 글줄 끝에 맞게 당긴다. */
+.closeX { flex: none; width: 44px; height: 44px; margin-right: -10px; display: grid; place-items: center; padding: 0;
+  background: none; color: var(--muted); }
+.closeX svg { width: 24px; height: 24px; }
+.closeX:active { transform: scale(.96); }
+
+/* 숨김 모드 (화면 더블탭, app.js 숨김바꾸기). 아바타와 배경만 남긴다. 숨김은 visibility 와
+   opacity 를 함께 준다 -- 아이폰은 pointer-events 만으로는 숨긴 것이 터치를 안 받는다는
+   보장이 없어, 숨은 단추 자리를 친 손이 그 단추를 누른다. 서서히 걷고 서서히 되돌려
+   갑자기 꺼지는 느낌이 없게 한다. */
+.topIcon, .chatBar, .chatLog, .notice { transition: opacity .2s ease, visibility .2s; }
+/* 받아쓰기 파일 받는 중 -- 마이크 줄 바로 위 작은 글. 서 있는 동안(body.kitOn) 대화 줄을 그만큼 올린다. */
+.kitState { position: absolute; left: 0; right: 0; pointer-events: none;
+  bottom: max(calc(var(--safe-bottom) + 60px), calc(var(--kb, 0px) + 50px));
+  text-align: center; font-size: 12px; line-height: 16px; color: rgba(235, 235, 245, .6); }
+.kitState[hidden] { display: none; }
+body.kitOn .chatLog { bottom: max(calc(var(--safe-bottom) + 82px), calc(var(--kb, 0px) + 72px)); }
+/* 받는 중 표시(.kitState)는 숨김에서도 남긴다 -- 숨기면 받기가 끝난 것인지 끊긴 것인지 몰라 (사람이 '터치하다 보면 받는 중 문구가
+   사라진다' 고 짚었다). 받는 동안만 서는 작은 글이다. */
+body.bare .topIcon, body.bare .chatBar, body.bare .chatLog, body.bare .notice {
+  opacity: 0; visibility: hidden; pointer-events: none; }
+/* 대화 줄은 대화하는 동안(body.talking)만 선다. 답을 다 읽고 8 초 쉬면 숨는다 (app.js 대화 때).
+   대화 줄은 0.6 초에 걸쳐 서서히 걷힌다 -- 읽던 말이 한 번에 꺼지면 무엇이 사라졌는지
+   눈이 못 따라간다. 숨김은 숨김 모드와 같은 셋(투명 / 안 보임 / 손 안 받음)이다. */
+body:not(.talking) .chatLog { opacity: 0; visibility: hidden; pointer-events: none; }
+body:not(.talking) .chatLog { transition: opacity .6s ease, visibility .6s; }
+
+/* 아래에서 올라오는 판. 뒤를 덮는 막은 안전영역 위쪽 높이만큼 칠을 비운다 --
+   통째로 덮으면 아이폰이 그 색을 상태줄에 읽어 두고 판을 닫아도 안 돌아온다
+   (노트앱에서 겪은 자리).
+   막의 바닥은 자판 위다 (--kb, app.js 자판 따라 오르기 -- 곡선으로 함께 오른다) -- 판이 자판 위 남은 자리 안에 들어 칸이 자판
+   뒤로 안 숨고, 아이폰이 그 칸을 보이려고 문서를 굴릴 일이 없다. 넘치는 판은 판 안에서만 굴고 끝까지
+   굴린 힘은 뒤로 안 넘긴다. */
+.sheetBack { position: fixed; top: 0; left: 0; right: 0; bottom: var(--kb, 0px); display: flex; align-items: flex-end;
+  background: linear-gradient(to bottom, transparent var(--safe-top), rgba(0, 0, 0, .45) var(--safe-top)); }
+.sheetBack[hidden] { display: none; }
+/* 치마 : 막 아래(자판 자리)를 판 칠로 메운다 (노트앱 판 붙잡기의 치마와 같은 몫). 막의 바닥이 자판 위라
+   그 아래는 아무것도 안 덮어, 아이폰 자판이 비쳐 보이는 판에서는 자판 너머로 뒤 화면(아바타)이 비치고,
+   곡선 도중 자판과 판 사이가 벌어진 프레임에도 그 틈으로 보였다 (사람이 짚었다). 판 바닥과 이어지게 판과
+   같은 칠이고, 높이는 그린 높이(--kb)에 2 를 더해 반올림 틈을 덮는다. 자판이 없으면 높이 0 이다. */
+.sheetBack::after { content: ''; position: absolute; left: 0; right: 0; top: 100%;
+  height: calc(var(--kb, 0px) + 2px); background: var(--panel); pointer-events: none; }
+.sheet { width: 100%; max-height: 78%; overflow-y: auto; overscroll-behavior: contain;
+  padding: 16px 16px calc(var(--safe-bottom) + 16px);
+  background: var(--panel); border-radius: 18px 18px 0 0; }
+/* 자판이 오르면 자판 위 남은 자리가 좁아 78% 로는 판이 낮게 눌린다. 다 오르면 상태줄 아래 12 만 남기고
+   위로 더 올린다 (사람이 정했다). 바닥은 자판이 덮어 안전영역 여백도 뺀다. 둘 다 오른 정도(--kbk,
+   0 ~ 1, app.js 자판 따라 오르기)의 비로 옮긴다 -- 자판이 떴는지로 한 번에 갈아 끼우면 오르는 곡선
+   도중 판 윗변이 툭 뛴다. */
+.sheet { max-height: calc(78% + (22% - var(--safe-top) - 12px) * var(--kbk, 0));
+  padding-bottom: calc(16px + var(--safe-bottom) * (1 - var(--kbk, 0))); }
+.sheet header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.sheet h2 { margin: 0; font-size: 18px; }
+.list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.list .empty { color: var(--muted); margin: 8px 0; }
+/* 판 화면 안에 든 목록(외형의 아바타 목록)은 위 여백을 안 둔다 -- 바깥 화면 목록의 줄 사이 8 이 이미
+   묶음 제목과 띄워, 12 를 더하면 그 제목 아래만 28 로 다른 묶음(16)보다 벌어진다. */
+.page .list { margin-top: 0; }
+/* 판 화면 맨 위가 묶음 제목이면(외형의 '아바타') 그 위 여백 16 을 뺀다 -- 판 머리 아래 20 위에 더해져
+   다른 화면(첫 줄까지 20)보다 36 으로 벌어진다. */
+.page > .sub:first-child { margin-top: 0; }
+/* 아바타 카드 묶음은 그 제목에서 4 더 띄운다 (20, 사람이 정했다) -- 카드가 칠과 테두리를 든 덩이라
+   16 이면 제목에 붙어 보인다. */
+#avatarList { margin-top: 4px; }
+/* 판 안의 작은 머리와 누르는 줄. 줄은 아바타 목록의 줄(.row .pick)과 같은 바탕이다. */
+.sheet .sub { margin: 16px 0 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.list .item { text-align: left; padding: 12px 14px; background: rgba(255, 255, 255, .05); }
+/* 판 맨 끝 초기화처럼 그 화면 전체에 걸리는 단추는 글을 가운데에 둔다 -- 위 줄들(하나를 고르거나
+   여는 줄)과 갈려 읽힌다. */
+.list .item.center { text-align: center; }
+/* 설정 판의 두 겹. 항목 목록과 항목 화면은 .list(flex)라 hidden 속성만으로는 안 숨으므로
+   따로 못 박는다. 목록 줄은 오른쪽에 꺾쇠를 달아 들어가는 줄임을 알린다. */
+.sheet .list[hidden] { display: none; }
+.list .nav { display: flex; justify-content: space-between; align-items: center; }
+.list .nav::after { content: '›'; color: var(--muted); font-size: 20px; line-height: 1; }
+.sheet header h2 { flex: 1; }
+/* 켜고 끄는 줄. 글은 왼쪽, 스위치는 오른쪽. */
+.list .switch { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: 12px; background: rgba(255, 255, 255, .05); font-size: 15px; }
+.list .switch input { width: 22px; height: 22px; accent-color: var(--accent); }
+/* 밀어서 정하는 칸. 이름은 왼쪽, 지금 값은 줄 오른쪽 끝에 선다 (노트앱 글꼴 설정과 같은 짜임).
+   밀기 꼴은 맨 위 input[type="range"] 가 든다. */
+.list .field.slider > span { display: flex; justify-content: space-between; align-items: baseline; }
+.list .field output { color: var(--text); font-variant-numeric: tabular-nums; }
+.list .field input[type="range"] { padding: 0; }
+/* 간격은 노트앱 화면 설정 판을 웹킷으로 띄워 그려진 자리로 잰 값이다 (CSS 숫자만 옮기면 노트앱의
+   기본 여백이 빠져 좁아진다) -- 판 머리 아래 20 (노트앱 .modal-header. 목록 위 12 와는 세로 여백이
+   겹쳐 큰 쪽 하나만 서므로 머리 쪽에 20 을 그대로 둔다), 묶음 제목 아래 첫 줄까지 16 (.sub 아래 8 +
+   목록 사이 8), 밀기 이름과 홈 사이 17, 홈과 다음 밀기 이름 사이 16 (목록 사이 8 + 8). 밀기 다음에
+   오는 줄(스위치 / 단추)도 같은 16 이다 -- 손잡이가 홈 위아래로 7 씩 넘쳐 8 만 두면 줄에 닿는다. */
+.list .field.slider { gap: 17px; }
+.list .field.slider + .field.slider,
+.list .field.slider + .switch,
+.list .field.slider + .item { margin-top: 8px; }
+.list .field select { padding: 10px 12px; border: 0; border-radius: 10px; background: rgba(255, 255, 255, .06);
+  color: var(--text); font: inherit; font-size: 16px; }
+
+/* 판 안의 상태 한 줄 (키가 잠겨 있는지 / 비밀번호가 틀렸는지). */
+.list .state { margin: 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
+.list .state:empty { display: none; }
+/* 칸 아래 잔글 (키를 만드는 곳). 상태 줄과 같은 크기와 색이고 주소만 켠 색(밝은 회색)으로 밑줄을 단다
+   (노트앱 .ai-note a 와 같은 짜임) -- 누르는 자리인 것이 보여야 한다. */
+.list .note { margin: 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
+.list .note a { color: var(--live); text-decoration: underline; text-underline-offset: 2px; }
+/* 적는 칸. 16px 는 위 말 넣는 칸과 같은 까닭이다. */
+.list .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+.list .field[hidden], .list .item[hidden] { display: none; }
+.list .field input:not([type="range"]), .list .field textarea { padding: 10px 12px; border: 0; border-radius: 10px;
+  background: rgba(255, 255, 255, .06); color: var(--text); font: inherit; font-size: 16px; resize: vertical; }
+/* 모델을 고르는 긴 단추와 그 아래 펴지는 목록 (노트앱 LLM 설정 .ai-pick-btn / .ai-pick 의
+   짜임). 칠과 둥글기는 이 판의 적는 칸과 같은 값이다 -- 같은 판에 서는 것들이라 갈리면 그
+   자리만 덧대어 보인다. 고른 것이 길면 줄을 늘리지 않고 꼬리를 자른다 (두 줄이 되면 아래
+   칸들이 통째로 밀린다). */
+.pickBtn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 8px 10px 12px;
+  border-radius: 10px; background: rgba(255, 255, 255, .06); color: var(--text); font-size: 16px; text-align: left; }
+.pickBtn span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pickBtn svg { width: 20px; height: 20px; flex: none; fill: var(--muted); transition: transform .16s ease; }
+.pickBtn[aria-expanded="true"] svg { transform: rotate(180deg); }
+/* 목록은 판 안에서 따로 굴린다. 끝까지 굴린 뒤에도 미는 힘은 뒤 판으로 안 넘긴다. 안쪽 틈은
+   고른 줄의 칠이 테두리에 맞붙어 칸이 통째로 물든 것처럼 보이지 않게 둔다. */
+.pickList { max-height: 260px; overflow-y: auto; overscroll-behavior: contain; padding: 6px;
+  border-radius: 10px; background: var(--bg); }
+.pickList[hidden] { display: none; }
+.pickList .head { padding: 8px 12px; font-size: 13px; font-weight: 600; color: var(--text); }
+.pickList button { display: block; width: 100%; padding: 10px 12px; border-radius: 8px; background: none;
+  color: var(--muted); font-size: 14px; text-align: left; word-break: break-all; }
+/* 고른 모델은 글자색이 아니라 칠한 바로 선다 -- 긴 목록에서 한 줄을 눈으로 찾지 않게. */
+.pickList button.on { background: var(--accent); color: #fff; font-weight: 600; }
+.pickList .empty { padding: 8px 12px; margin: 0; font-size: 13px; line-height: 1.5; }
+/* 키 칸. 맞는지 표시를 칸 안 오른쪽에 얹는다. 오른쪽 안쪽 여백 38 = 표시가 끝에서 떨어진
+   12 + 표시 18 + 글자가 표시에 안 닿게 두는 8 (노트앱 열쇠 칸과 같은 셈). 표시는 손을 안
+   받는다 -- 그 자리를 눌러도 칸이 잡혀야 한다. */
+.keybox { position: relative; display: flex; flex-direction: column; }
+.list .field .keybox input { padding-right: 38px; }
+.keybox .mark { position: absolute; right: 12px; top: 0; bottom: 0; display: flex; align-items: center; pointer-events: none; }
+.keybox .mark svg { width: 18px; height: 18px; }
+.keybox .mark.ok svg { fill: #6fcf97; }
+.keybox .mark.bad svg { fill: #f29a9a; }
+/* 어느 길로 묻는지 고르는 줄 (노트앱 LLM 설정 .ai-caps 의 짜임). 셋이 한 줄을 나눠 갖는다.
+   고른 것은 칠로만 가른다 -- 글자 크기나 테두리 두께로 가르면 상자 크기가 바뀌어 고른 단추만
+   이웃과 어긋난다. 줄 높이 18 을 못 박는 까닭도 같다 (한글이 든 단추만 높아지지 않게).
+   칠은 이 판의 고른 모델 줄(.pickList .on)과 같은 값이다. */
+.caps { display: flex; gap: 6px; }
+.caps button { flex: 1; min-width: 0; padding: 9px 10px; border-radius: 12px; background: rgba(255, 255, 255, .06);
+  color: var(--muted); font-size: 14px; line-height: 18px; font-weight: 600; }
+.caps button.on { background: var(--accent); color: #fff; }
+/* 길마다 서는 칸 묶음. 목록(.list)의 간격을 그대로 잇게 묶음 자신은 칸을 안 만든다. */
+.lanePane { display: contents; }
+.lanePane[hidden] { display: none; }
+.row { display: flex; gap: 8px; align-items: stretch; }
+.row .pick { flex: 1; text-align: left; padding: 12px 14px; background: rgba(255, 255, 255, .05);
+  display: flex; flex-direction: column; gap: 2px; }
+.row.on .pick { outline: 2px solid var(--accent); }
+.row .pick small { color: var(--muted); }
+.row .del { padding: 0 14px; background: rgba(255, 255, 255, .05); color: #f29a9a; font-size: 14px; }
