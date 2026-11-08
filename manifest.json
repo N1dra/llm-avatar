@@ -1,6 +1,6 @@
 {
-  "name": "LLM 버튜버",
-  "short_name": "버튜버",
+  "name": "LLM_Avatar",
+  "short_name": "LLM_Avatar",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
