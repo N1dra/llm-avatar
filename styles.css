@@ -27,7 +27,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
   overscroll-behavior: none; }
 button { font: inherit; color: inherit; border: 0; border-radius: 12px; cursor: pointer; }
 
-/* 밀기. 꼴은 노트앱 Range slider 와 같다 (NoteApp apps/styles.css) -- 6px 홈에 20px 손잡이, 손잡이는
+/* 밀기. 꼴은 노트앱 Range slider 와 같다 (Mini-Note apps/styles.css) -- 6px 홈에 20px 손잡이, 손잡이는
    판 색 2px 테두리와 옅은 그림자로 홈에서 떠 보인다. 색만 이 앱의 회색 계열로 둔다. 바깥 여백은
    노트앱처럼 안 둔다 -- 간격은 밀기 칸 쪽(.field.slider)이 노트앱 값으로 잡는다. */
 input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px;

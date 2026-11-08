@@ -1,0 +1,18 @@
+node_modules/
+
+# 문 서버 설정에는 비밀값(secret)이 들어간다. 꼴은 door.example.json 이 들고 있다.
+door/door.json
+
+# 음성 엔진 묶음의 큰 파일(onnx 모델, wasm, .data). 남이 만든 것이고 합쳐 550 MB 남짓이라 올리지 않는다.
+# 둘은 깃허브 한 파일 한도(100MB)도 넘는다 -- stt 모델 238MB, tts 데이터 139MB.
+# 어디서 받는지는 tools/음성 엔진 큰 파일 받는 자리.txt 가 든다. 묶음의 작은 파일(손본 js, 섞은 voice.bin,
+# 출처.txt)은 여기서만 고쳐 쓴 것이라 올린다.
+engine/kit-*/*.wasm
+stt/kit-*/*.onnx
+stt/kit-*/*.wasm
+tts/kit-*/*.onnx
+tts/kit-*/*.wasm
+tts/kit-*/*.data
+
+*.log
+.DS_Store

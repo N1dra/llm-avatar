@@ -34,7 +34,7 @@
      서버 뿌리('/')가 없다. -->
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icons/icon.svg">
-<link rel="apple-touch-icon" href="./icons/icon.svg">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
 <link rel="stylesheet" href="./styles.css">
 </head>
 <!-- booting : 앱 코드(app.js)가 화면 단추들을 다 정할 때까지 무대 위 단추와 줄을 숨긴다. 단추마다
@@ -215,7 +215,7 @@
          짜임과 꼴은 노트앱 LLM 설정을 따른다 -- 맨 위 줄이 길 셋(API / Extra / Local)을 고르고,
          그 아래 긴 단추가 모델을 고르는 자리이고, 누르면 그 아래에 앱 안 목록이 펴진다 (판이
          내주는 select 목록은 기기마다 생김새가 갈린다). API 는 Claude 에 곧바로 묻고, Extra 와
-         Local 은 PC 창구(#!/door)를 거친다 -- 나가는 곳 제한(CSP)이 Claude 주소와 창구 주소
+         Local 은 PC 창구(source/door)를 거친다 -- 나가는 곳 제한(CSP)이 Claude 주소와 창구 주소
          둘만 연다. -->
     <div class="page list" data-page="brain" hidden>
       <div id="laneCaps" class="caps" role="group">
