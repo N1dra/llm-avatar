@@ -1,7 +1,9 @@
 // 오프라인 캐시만 든다. 기능을 걸지 않는다 -- 앱 껍데기의 아이폰 판은 서비스
 // 워커를 안 돌리므로, 여기에 기댄 기능은 싼 앱에서 말없이 사라진다.
 // 캐시 이름을 올리면 새 판이 깔린다. 파일을 고쳐 배포할 때 함께 올린다.
-const CACHE_NAME = 'lvm-shell-v161';
+const CACHE_NAME = 'lvm-shell-v162';
+// PC 원본을 창구에서 받는 길(창구부름)은 앱 화면과 같은 손을 쓴다 -- 배포 판은 중계 방을 거친다.
+importScripts('./door-link.js');
 // 폰 안 받아쓰기의 엔진과 모델(stt/kit-dolphin, 263 MB 남짓)은 따로 담는다. 앱 판을 올릴 때마다 지우면 그때마다 다시 받는다 --
 // 받는 자리가 PC(이 앱을 내주는 곳)라 PC 가 꺼진 때 판이 오르면 폰 받아쓰기가 통째로 사라진다. 이 파일들은 안 바뀌므로
 // 캐시 먼저로 준다. 바꿀 때는 폴더 이름과 이 이름을 함께 바꾼다 (stt/kit-dolphin/출처.txt) -- 이름이 바뀐 옛 캐시는 아래
@@ -14,7 +16,7 @@ const KIT_CACHE = 'lvm-stt-kit-dolphin';
 const TTS_CACHE = 'lvm-tts-kit-st';
 const 꾸러미들 = [['/stt/kit-dolphin/', KIT_CACHE], ['/engine/kit-one/', KIT_CACHE], ['/tts/kit-st/', TTS_CACHE]];
 const SHELL = [
-  './', './index.html', './styles.css', './app.js', './shell.js', './brain.js', './keybox.js', './sw-reg.js',
+  './', './index.html', './styles.css', './app.js', './door-link.js', './shell.js', './brain.js', './keybox.js', './sw-reg.js',
   './face/tune.js', './engine/worker.js', './face/avatar-vrm.js', './manifest.json', './icons/icon.svg', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',
   './vendor/three/build/three.module.js',
   './vendor/three/examples/jsm/loaders/GLTFLoader.js',
@@ -109,9 +111,10 @@ async function PC에서(req) {
   const 열쇠 = await PC열쇠풀기(c.상자);
   if (!열쇠) return null;
   const 상대 = new URL(req.url).pathname.slice(new URL(self.registration.scope).pathname.length) || 'index.html';
-  const 끊개 = new AbortController(), 시계 = setTimeout(() => 끊개.abort(), 2500);
+  // 중계를 거치면 첫 부름에 방에 붙는 시간이 더 든다. PC 가 꺼져 있으면 중계가 그 자리에서 알려 기다리지 않는다.
+  const 끊개 = new AbortController(), 시계 = setTimeout(() => 끊개.abort(), 6000);
   try {
-    const r = await fetch(c.주소 + '/src/' + 상대, { headers: { 'x-door-key': 열쇠 }, signal: 끊개.signal, cache: 'no-store' });
+    const r = await 창구부름({ 주소: c.주소, 열쇠 }, '/src/' + 상대, { headers: { 'x-door-key': 열쇠 }, signal: 끊개.signal, cache: 'no-store' });
     if (req.mode === 'navigate') PC에서받음 = r.ok;
     // 없는 파일(404)은 올린 판에서 받는다. 다른 실패(열쇠 틀림 / 창구 오류)는 1 분 쉰다.
     if (!r.ok) { if (r.status !== 404) PC쉼까지 = Date.now() + 60000; return null; }

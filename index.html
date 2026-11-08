@@ -20,7 +20,9 @@
   - connect-src : 'self' 와 api.anthropic.com 과 PC 창구(사설 망 안에서만 닿는 이 PC 의
     https :10000 -- Tailscale serve 가 127.0.0.1:8788 의 door.js 로 넘긴다). 창구는 두뇌
     Extra / Local 길이 쓴다. 이 출처는 사용자가 지시해 연 것이다 (두뇌 길 셋을 실제로 돌게 하는
-    갈래를 고르며 "보안 설정을 그 주소로 열어도 된다"). 바꾸면 app.js 의 창구주소도 함께 고친다.
+    갈래를 고르며 "보안 설정을 그 주소로 열어도 된다"). 배포 판의 창구 길은 wss://llm-avatar.yamak.ai
+    의 중계 방이다 (door-link.js -- 사람이 PC 주소를 걷고 주소를 하나로 두라고 했다). 바꾸면 app.js
+    의 창구주소도 함께 고친다.
     blob: 은 넣은 VRM 을 임시 주소로 읽는 길이다.
   - img-src : blob: / data: 은 VRM 안의 그림(텍스처)이 그 꼴로 풀린다.
   - script-src : 파일만 허락하고 페이지 안에 적은 스크립트는 막는다. 하나 남은 안쪽
@@ -29,7 +31,7 @@
     안 고치면 three 를 못 찾아 아바타가 통째로 안 뜬다.
   - frame-ancestors 는 meta 로는 안 먹어 안 적는다.
 -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-GeX7AxWEpaopuJWpJ8boAR++PJ5xnN/jil9zSenScdw='; connect-src 'self' https://api.anthropic.com https://desktop-nf165ol.taile108ad.ts.net:10000 https://llm-avatar-pc.yamak.ai blob: data:; img-src 'self' blob: data:; style-src 'self'; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-GeX7AxWEpaopuJWpJ8boAR++PJ5xnN/jil9zSenScdw='; connect-src 'self' https://api.anthropic.com https://desktop-nf165ol.taile108ad.ts.net:10000 wss://llm-avatar.yamak.ai blob: data:; img-src 'self' blob: data:; style-src 'self'; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- 경로는 전부 상대 경로다. 앱 껍데기로 싸면 이 폴더 하나가 통째로 앱이 되어
      서버 뿌리('/')가 없다. -->
 <link rel="manifest" href="./manifest.json">
@@ -299,6 +301,7 @@
   }
 }
 </script>
+<script src="./door-link.js"></script>
 <script src="./shell.js"></script>
 <script src="./face/tune.js"></script>
 <script type="module" src="./app.js"></script>
